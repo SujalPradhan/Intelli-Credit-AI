@@ -5,13 +5,13 @@ from research.search_service import generate_queries, search_serper
 from research.scraper import extract_article
 from research.analyzer import analyze_article, extract_risk_signals, MODEL
 from research.prompts import get_summary_prompt
-from common.gemini_client import get_gemini_client
+from common.aipipe_client import get_aipipe_client
 
 
 async def perform_research(request: ResearchRequest) -> ResearchResponse:
     """Orchestrate the full research pipeline with logging at every stage."""
     logger = PipelineLogger()
-    client = get_gemini_client()
+    client = get_aipipe_client()
 
     # ── Stage 1: Query Generation ──────────────────────────────────────
     queries = generate_queries(request.company_name, request.sector, request.promoters)
@@ -39,7 +39,13 @@ async def perform_research(request: ResearchRequest) -> ResearchResponse:
     # ── Stage 3: Article Extraction ────────────────────────────────────
     articles = []
     extraction_log = []
-    for result in unique_results[:3]:  # Cap at 10 articles
+    target_article_count = 3
+    
+    for result in unique_results:
+        # Stop fetching once we have enough successful articles
+        if len(articles) >= target_article_count:
+            break
+            
         article = extract_article(result.link)
         if article:
             articles.append(article)
@@ -47,6 +53,12 @@ async def perform_research(request: ResearchRequest) -> ResearchResponse:
                 "url": article.url,
                 "text_length": article.text_length,
                 "preview": article.text[:200] + "..." if len(article.text) > 200 else article.text,
+            })
+        else:
+            # Log the failure for transparency
+            extraction_log.append({
+                "url": result.link,
+                "error": "Failed to extract content (404, timeout, or anti-bot block)"
             })
 
     logger.log("article_extraction", {
@@ -88,11 +100,12 @@ async def perform_research(request: ResearchRequest) -> ResearchResponse:
         summary_prompt = get_summary_prompt(combined, request.company_name, request.sector)
 
         try:
-            summary_response = client.models.generate_content(
+            summary_response = client.chat.completions.create(
                 model=MODEL,
-                contents=summary_prompt,
+                messages=[{"role": "user", "content": summary_prompt}],
+                response_format={"type": "json_object"}
             )
-            raw = summary_response.text.strip()
+            raw = summary_response.choices[0].message.content.strip()
 
             # Strip markdown fences if present
             if raw.startswith("```"):
