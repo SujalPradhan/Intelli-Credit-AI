@@ -4,10 +4,13 @@ from research.service import perform_research
 
 router = APIRouter(prefix="/research", tags=["Research"])
 
-@router.post("/", response_model=ResearchResponse)
-async def trigger_research(request: ResearchRequest):
+
+@router.post("/analyze", response_model=ResearchResponse)
+async def analyze_company(request: ResearchRequest):
     """
-    Endpoint to handle external intelligence gathering.
+    Run the full research pipeline for a company.
+
+    Receives company details, performs external intelligence gathering,
+    and returns structured insights along with pipeline logs for transparency.
     """
-    # TODO: Handle research orchestration via service
     return await perform_research(request)
