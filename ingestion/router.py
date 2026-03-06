@@ -1,13 +1,19 @@
-from fastapi import APIRouter
-from ingestion.schemas import DocumentIngestRequest, DocumentIngestResponse
-from ingestion.service import process_document
+from fastapi import APIRouter, UploadFile, File, Form
+from typing import Annotated, List
+from ingestion.schemas import DocumentIngestResponse, StructuredFinancialOutput
+from ingestion.service import process_company_documents
+import json
 
 router = APIRouter(prefix="/ingest", tags=["Ingestion"])
 
-@router.post("/document", response_model=DocumentIngestResponse)
-async def ingest_document(request: DocumentIngestRequest):
+@router.post("/document", response_model=StructuredFinancialOutput)
+async def ingest_company(
+    file: UploadFile = File(...),
+    metadata: str = Form(...) # JSON string: {company_name, sector, location, documents:[{doc_type, file_name}]}
+):
     """
-    Endpoint to handle document parsing and financial data extraction.
+    Upload multiple financial documents for a company.
+    Returns structured financial JSON ready for the research agent.
     """
-    # TODO: Handle document parsing and extraction via service
-    return await process_document(request)
+    meta = json.loads(metadata)
+    return await process_company_documents([file], meta)
