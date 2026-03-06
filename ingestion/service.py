@@ -2,6 +2,7 @@ from ingestion.schemas import DocumentIngestRequest, DocumentIngestResponse
 import os
 import uuid
 from fastapi import UploadFile 
+from ingestion.parser.pdf_parser import parse_financial_pdf
 
 STORAGE_DIR = "storage/documents"
 
@@ -26,8 +27,12 @@ async def process_document(file: UploadFile) -> DocumentIngestResponse:
         contents = await file.read()
         f.write(contents)
 
+    # parse the file to get financial data
+    parsed_data = parse_financial_pdf(file_path)
+
     return DocumentIngestResponse(
         status="uploaded", 
         document_id=document_id, 
-        filename=filename
+        filename=filename,
+        data= parsed_data
     )
