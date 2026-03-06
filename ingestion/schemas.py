@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Any, Optional
 
-class DcoumentIngestResponse(BaseModel):
+class DocumentIngestResponse(BaseModel):
     status: str
     document_id: str
     filename: str
