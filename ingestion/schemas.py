@@ -7,3 +7,4 @@ class DocumentIngestRequest(BaseModel):
 class DocumentIngestResponse(BaseModel):
     status: str
     document_id: str
+    filename: str
