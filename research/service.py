@@ -14,7 +14,16 @@ async def perform_research(request: ResearchRequest) -> ResearchResponse:
     client = get_aipipe_client()
 
     # ── Stage 1: Query Generation ──────────────────────────────────────
-    queries = generate_queries(request.company_name, request.sector, request.promoters)
+    anomalies = []
+    if request.financial_data:
+        anomalies = [a.model_dump() for a in request.financial_data.anomalies_detected]
+
+    queries = generate_queries(
+        request.company_name, 
+        request.sector, 
+        request.promoters, 
+        anomalies
+    )
     logger.log("query_generation", {"queries": queries})
 
     # ── Stage 2: Search Retrieval ──────────────────────────────────────
@@ -130,4 +139,5 @@ async def perform_research(request: ResearchRequest) -> ResearchResponse:
         sector_trends=sector_trends,
         risk_signals=risk_signals,
         pipeline_logs=logger.get_logs(),
+        financial_data=request.financial_data,
     )

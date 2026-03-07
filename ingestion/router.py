@@ -6,7 +6,7 @@ import json
 
 router = APIRouter(prefix="/ingest", tags=["Ingestion"])
 
-@router.post("/document", response_model=StructuredFinancialOutput)
+@router.post("/document")
 async def ingest_company(
     file: UploadFile = File(...),
     metadata: str = Form(...) # JSON string: {company_name, sector, location, documents:[{doc_type, file_name}]}

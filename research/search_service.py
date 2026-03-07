@@ -3,7 +3,12 @@ from common.config import settings
 from research.schemas import SearchResult
 
 
-def generate_queries(company_name: str, sector: str, promoters: list[str]) -> list[str]:
+def generate_queries(
+        company_name: str, 
+        sector: str, 
+        promoters: list[str],
+        anomalies: list = []
+    ) -> list[str]:
     """Generate diverse search queries for comprehensive research coverage."""
     queries = [
         f"{company_name} India news",
@@ -17,6 +22,10 @@ def generate_queries(company_name: str, sector: str, promoters: list[str]) -> li
 
     for promoter in promoters:
         queries.append(f"{promoter} fraud OR investigation OR litigation")
+
+    for anomaly in anomalies:
+        if anomaly.get("severity") in ("medium", "high"):
+            queries.append(f"{company_name} {anomaly.get('type', '')} {anomaly.get('period', '')}")
 
     return queries
 
