@@ -6,8 +6,10 @@ import uuid
 from fastapi import UploadFile 
 from ingestion.parser.pdf_parser import parse_financial_pdf
 from typing import List
+import httpx
 
 STORAGE_DIR = "storage/documents"
+RESEARCH_URL = "http://localhost:8000/research/analyze" # TODO: Change in Production
 
 async def process_company_documents(
     files: List[UploadFile], 
@@ -48,4 +50,16 @@ async def process_company_documents(
 
     # Summarize all docs together with Gemini
     result = summarize(company_name, sector, location, parsed_docs)
-    return result
+
+    # calling the research agent
+    research_payload = {
+        "company_name": result.company_name,
+        "sector": meta.get("metadata", {}).get("sector", "unknown"),
+        "promoters": meta.get("promoters", []),
+        "financial_data": result.dict()
+    }
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        research_response = await client.post(RESEARCH_URL, json=research_payload)
+
+    return research_response.json()
