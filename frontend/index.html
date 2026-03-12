@@ -1,0 +1,2330 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Intelli-Credit AI | Credit Decisioning System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        font-family: "Inter", sans-serif;
+      }
+
+      /* Step section visibility */
+      .step-section {
+        display: none;
+      }
+      .step-section.active {
+        display: block;
+        animation: fadeInUp 0.35s ease-out;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Spinner */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .spinner {
+        animation: spin 0.9s linear infinite;
+      }
+
+      /* Pulse rings around spinner */
+      @keyframes pulseRing {
+        0% {
+          transform: scale(0.85);
+          opacity: 0.5;
+        }
+        100% {
+          transform: scale(1.6);
+          opacity: 0;
+        }
+      }
+      .pulse-ring {
+        animation: pulseRing 2.2s ease-out infinite;
+      }
+      .pulse-ring-delayed {
+        animation: pulseRing 2.2s ease-out 0.7s infinite;
+      }
+
+      /* Progress bar smooth transition */
+      #loading-progress-bar {
+        transition: width 2.8s ease-in-out;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+
+      /* File drop zone */
+      .file-drop-zone {
+        transition:
+          border-color 0.2s,
+          background-color 0.2s;
+      }
+      .file-drop-zone.drag-over {
+        background-color: #eff6ff;
+        border-color: #3b82f6;
+      }
+
+      /* Score arc transition */
+      #score-arc {
+        transition: stroke-dashoffset 1.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Smooth bar transitions */
+      .score-bar {
+        transition: width 1.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-900 min-h-screen">
+    <!-- ─── Toast Notification ─────────────────────────────────────────────── -->
+    <div id="toast" class="hidden fixed top-4 right-4 z-50 max-w-sm w-full">
+      <div
+        id="toast-inner"
+        class="rounded-xl shadow-lg p-4 flex items-start gap-3 border"
+      >
+        <span
+          id="toast-icon"
+          class="text-base flex-shrink-0 mt-0.5 font-bold"
+        ></span>
+        <div class="flex-1 min-w-0">
+          <p id="toast-title" class="font-semibold text-sm leading-tight"></p>
+          <p id="toast-msg" class="text-sm mt-1 opacity-85 leading-snug"></p>
+        </div>
+        <button
+          onclick="hideToast()"
+          class="ml-2 opacity-50 hover:opacity-100 flex-shrink-0 text-lg leading-none"
+        >
+          &times;
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── Header ────────────────────────────────────────────────────────── -->
+    <header
+      class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm"
+    >
+      <div
+        class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4"
+      >
+        <!-- Logo + Name -->
+        <div class="flex items-center gap-3 flex-shrink-0">
+          <div
+            class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm"
+          >
+            <svg
+              class="w-5 h-5 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h1 class="font-bold text-slate-900 text-base leading-tight">
+              Intelli-Credit AI
+            </h1>
+            <p class="text-xs text-slate-500 leading-tight">
+              Credit Decisioning System
+            </p>
+          </div>
+        </div>
+
+        <!-- Step Indicator (desktop) -->
+        <div id="step-indicator" class="hidden sm:flex items-center gap-1.5">
+          <!-- Step 1 -->
+          <div class="flex items-center gap-1.5">
+            <div
+              id="dot-1"
+              class="w-7 h-7 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-bold shadow-sm transition-all"
+            >
+              1
+            </div>
+            <span
+              id="label-1"
+              class="text-xs font-semibold text-blue-600 transition-colors"
+              >Setup</span
+            >
+          </div>
+          <div
+            id="connector-1"
+            class="w-10 h-px bg-slate-200 transition-colors"
+          ></div>
+          <!-- Step 2 -->
+          <div class="flex items-center gap-1.5">
+            <div
+              id="dot-2"
+              class="w-7 h-7 rounded-full bg-slate-200 text-slate-400 text-xs flex items-center justify-center font-bold transition-all"
+            >
+              2
+            </div>
+            <span
+              id="label-2"
+              class="text-xs font-medium text-slate-400 transition-colors"
+              >Research</span
+            >
+          </div>
+          <div
+            id="connector-2"
+            class="w-10 h-px bg-slate-200 transition-colors"
+          ></div>
+          <!-- Step 3 -->
+          <div class="flex items-center gap-1.5">
+            <div
+              id="dot-3"
+              class="w-7 h-7 rounded-full bg-slate-200 text-slate-400 text-xs flex items-center justify-center font-bold transition-all"
+            >
+              3
+            </div>
+            <span
+              id="label-3"
+              class="text-xs font-medium text-slate-400 transition-colors"
+              >Loan</span
+            >
+          </div>
+          <div
+            id="connector-3"
+            class="w-10 h-px bg-slate-200 transition-colors"
+          ></div>
+          <!-- Step 4 -->
+          <div class="flex items-center gap-1.5">
+            <div
+              id="dot-4"
+              class="w-7 h-7 rounded-full bg-slate-200 text-slate-400 text-xs flex items-center justify-center font-bold transition-all"
+            >
+              4
+            </div>
+            <span
+              id="label-4"
+              class="text-xs font-medium text-slate-400 transition-colors"
+              >Decision</span
+            >
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ─── Main Content ─────────────────────────────────────────────────── -->
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8 pb-16">
+      <!-- ══════════════════════════════════════════════════════════
+         SECTION 1 — Company Setup
+    ══════════════════════════════════════════════════════════ -->
+      <section id="section-1" class="step-section active">
+        <!-- Hero -->
+        <div class="text-center mb-10">
+          <div
+            class="inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 border border-blue-100"
+          >
+            <svg
+              class="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+            AI-Powered Analysis
+          </div>
+          <h2
+            class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight"
+          >
+            Credit Risk Assessment
+          </h2>
+          <p
+            class="text-slate-500 mt-3 max-w-lg mx-auto text-sm leading-relaxed"
+          >
+            Upload financial documents or run research-only intelligence
+            gathering — then get an AI-generated credit score, decision, and CAM
+            report.
+          </p>
+        </div>
+
+        <!-- Mode Toggle -->
+        <div class="flex justify-center mb-8">
+          <div class="flex bg-slate-100 rounded-xl p-1 gap-1 w-full max-w-sm">
+            <button
+              id="mode-btn-docs"
+              onclick="setMode('documents')"
+              class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all bg-white text-blue-600 shadow-sm border border-slate-200"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              With Documents
+            </button>
+            <button
+              id="mode-btn-research"
+              onclick="setMode('research-only')"
+              class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all text-slate-500"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              Research Only
+            </button>
+          </div>
+        </div>
+
+        <!-- Company Info Card -->
+        <div
+          class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-5"
+        >
+          <h3
+            class="text-sm font-bold text-slate-700 uppercase tracking-widest mb-5 flex items-center gap-2"
+          >
+            <svg
+              class="w-4 h-4 text-blue-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+            Company Information
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <!-- Company Name -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                Company Name <span class="text-red-500">*</span>
+              </label>
+              <input
+                id="company-name"
+                type="text"
+                placeholder="e.g. Tata Motors Ltd."
+                class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-slate-400"
+              />
+            </div>
+
+            <!-- Sector -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                Sector <span class="text-red-500">*</span>
+              </label>
+              <select
+                id="sector"
+                class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition text-slate-800"
+              >
+                <option value="">Select sector…</option>
+                <option value="Manufacturing">Manufacturing</option>
+                <option value="Information Technology">
+                  Information Technology
+                </option>
+                <option value="Healthcare & Pharma">Healthcare & Pharma</option>
+                <option value="Retail & FMCG">Retail & FMCG</option>
+                <option value="Banking & Finance">Banking & Finance</option>
+                <option value="Construction & Real Estate">
+                  Construction & Real Estate
+                </option>
+                <option value="Agriculture">Agriculture</option>
+                <option value="Logistics & Transport">
+                  Logistics & Transport
+                </option>
+                <option value="Textile">Textile</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <!-- Location -->
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-slate-700 mb-1.5"
+                >Location / City</label
+              >
+              <input
+                id="location"
+                type="text"
+                placeholder="e.g. Mumbai, Maharashtra"
+                class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-slate-400"
+              />
+            </div>
+          </div>
+
+          <!-- Promoters -->
+          <div class="mt-5">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5"
+              >Promoters / Key Personnel</label
+            >
+            <div
+              id="promoters-list"
+              class="flex flex-wrap gap-2 mb-2 min-h-[28px]"
+            ></div>
+            <div class="flex gap-2">
+              <input
+                id="promoter-input"
+                type="text"
+                placeholder="Enter name and press Enter or click Add"
+                class="flex-1 rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-slate-400"
+                onkeydown="
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addPromoter();
+                  }
+                "
+              />
+              <button
+                onclick="addPromoter()"
+                type="button"
+                class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition"
+              >
+                + Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document Upload Card (docs mode only) -->
+        <div
+          id="doc-upload-section"
+          class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8"
+        >
+          <h3
+            class="text-sm font-bold text-slate-700 uppercase tracking-widest mb-5 flex items-center gap-2"
+          >
+            <svg
+              class="w-4 h-4 text-blue-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              />
+            </svg>
+            Document Upload
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <!-- Drop Zone -->
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                Financial Document <span class="text-red-500">*</span>
+              </label>
+              <div
+                id="file-drop-zone"
+                class="file-drop-zone border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition"
+                onclick="document.getElementById('file-input').click()"
+                ondragover="
+                  event.preventDefault();
+                  this.classList.add('drag-over');
+                "
+                ondragleave="this.classList.remove('drag-over')"
+                ondrop="handleFileDrop(event)"
+              >
+                <svg
+                  class="w-9 h-9 text-slate-300 mx-auto mb-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <p id="file-label" class="text-sm text-slate-500">
+                  Drop file here or
+                  <span class="text-blue-600 font-semibold"
+                    >click to browse</span
+                  >
+                </p>
+                <p class="text-xs text-slate-400 mt-1.5">
+                  PDF or CSV — max 20 MB
+                </p>
+              </div>
+              <input
+                id="file-input"
+                type="file"
+                accept=".pdf,.csv"
+                class="hidden"
+                onchange="handleFileSelect(event)"
+              />
+            </div>
+
+            <!-- Document Type -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                Document Type <span class="text-red-500">*</span>
+              </label>
+              <select
+                id="doc-type"
+                class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition text-slate-800"
+              >
+                <option value="annual_report">Annual Report</option>
+                <option value="bank_statement">Bank Statement</option>
+                <option value="gst_return">GST Return</option>
+                <option value="balance_sheet">Balance Sheet</option>
+                <option value="income_statement">Income Statement</option>
+              </select>
+
+              <div
+                class="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-3"
+              >
+                <p class="text-xs text-amber-700 font-medium mb-1">
+                  Supported formats
+                </p>
+                <p class="text-xs text-amber-600">
+                  PDF (Annual reports, bank statements)<br />CSV (Transaction
+                  data, GST returns)
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex justify-center">
+          <button
+            onclick="handleStep1Submit()"
+            class="inline-flex items-center gap-2.5 px-10 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition text-sm"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+            <span id="step1-btn-text">Upload &amp; Analyze</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+         SECTION — Loading / Processing
+    ══════════════════════════════════════════════════════════ -->
+      <section id="section-loading" class="step-section">
+        <div
+          class="flex flex-col items-center justify-center min-h-[65vh] select-none"
+        >
+          <!-- Animated Rings + Spinner -->
+          <div class="relative flex items-center justify-center mb-10">
+            <div
+              class="absolute w-24 h-24 rounded-full bg-blue-100 pulse-ring"
+            ></div>
+            <div
+              class="absolute w-24 h-24 rounded-full bg-blue-100 pulse-ring-delayed"
+            ></div>
+            <div
+              class="relative w-20 h-20 bg-white rounded-full shadow-lg flex items-center justify-center border border-slate-100"
+            >
+              <svg
+                class="spinner w-9 h-9 text-blue-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                />
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <h2 class="text-xl font-bold text-slate-900 mb-2">
+            Analyzing with AI
+          </h2>
+          <p
+            id="loading-stage"
+            class="text-slate-500 text-sm mb-6 max-w-xs text-center leading-relaxed"
+          >
+            Initializing…
+          </p>
+
+          <!-- Fake progress bar -->
+          <div
+            class="w-72 h-1.5 bg-slate-200 rounded-full overflow-hidden mb-8"
+          >
+            <div
+              id="loading-progress-bar"
+              class="h-full bg-blue-600 rounded-full"
+              style="width: 3%"
+            ></div>
+          </div>
+
+          <!-- Stage list -->
+          <div id="stage-list" class="space-y-2 w-72 max-w-full"></div>
+
+          <p class="text-xs text-slate-400 mt-8">
+            This may take 60–120 seconds. Please wait…
+          </p>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+         SECTION 2 — Research Results
+    ══════════════════════════════════════════════════════════ -->
+      <section id="section-2" class="step-section">
+        <!-- Header -->
+        <div
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7"
+        >
+          <div>
+            <h2 class="text-2xl font-extrabold text-slate-900">
+              Research Analysis
+            </h2>
+            <p id="research-subtitle" class="text-slate-500 text-sm mt-0.5"></p>
+          </div>
+          <button
+            onclick="goToStep(3)"
+            class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition shadow-sm flex-shrink-0"
+          >
+            Continue to Loan Details
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Research Summary -->
+        <div
+          class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-5"
+        >
+          <div class="flex items-center gap-2 mb-4">
+            <div
+              class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0"
+            >
+              <svg
+                class="w-4 h-4 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-sm font-bold text-slate-800 uppercase tracking-widest"
+            >
+              Research Summary
+            </h3>
+          </div>
+          <p
+            id="research-summary"
+            class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap"
+          ></p>
+        </div>
+
+        <!-- Risk Signals -->
+        <div
+          class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-5"
+        >
+          <div class="flex items-center gap-2 mb-4">
+            <div
+              class="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0"
+            >
+              <svg
+                class="w-4 h-4 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-sm font-bold text-slate-800 uppercase tracking-widest"
+            >
+              Risk Signals
+            </h3>
+            <span
+              id="risk-count-badge"
+              class="ml-1 px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-full"
+              >0</span
+            >
+          </div>
+          <div id="risk-signals-container"></div>
+        </div>
+
+        <!-- 3-Column: News / Promoter Risks / Sector Trends -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <!-- Company News -->
+          <div
+            class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5"
+          >
+            <div class="flex items-center gap-2 mb-3">
+              <div
+                class="w-6 h-6 rounded-md bg-sky-100 flex items-center justify-center flex-shrink-0"
+              >
+                <svg
+                  class="w-3.5 h-3.5 text-sky-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+                  />
+                </svg>
+              </div>
+              <h4
+                class="text-xs font-bold text-slate-700 uppercase tracking-widest"
+              >
+                Company News
+              </h4>
+            </div>
+            <ul id="company-news" class="space-y-2"></ul>
+          </div>
+
+          <!-- Promoter Risks -->
+          <div
+            class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5"
+          >
+            <div class="flex items-center gap-2 mb-3">
+              <div
+                class="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center flex-shrink-0"
+              >
+                <svg
+                  class="w-3.5 h-3.5 text-amber-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+              <h4
+                class="text-xs font-bold text-slate-700 uppercase tracking-widest"
+              >
+                Promoter Risks
+              </h4>
+            </div>
+            <ul id="promoter-risks" class="space-y-2"></ul>
+          </div>
+
+          <!-- Sector Trends -->
+          <div
+            class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5"
+          >
+            <div class="flex items-center gap-2 mb-3">
+              <div
+                class="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center flex-shrink-0"
+              >
+                <svg
+                  class="w-3.5 h-3.5 text-emerald-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
+                  />
+                </svg>
+              </div>
+              <h4
+                class="text-xs font-bold text-slate-700 uppercase tracking-widest"
+              >
+                Sector Trends
+              </h4>
+            </div>
+            <ul id="sector-trends" class="space-y-2"></ul>
+          </div>
+        </div>
+
+        <!-- Financial Data (visible only if present) -->
+        <div
+          id="financial-data-section"
+          class="hidden bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-5"
+        >
+          <div class="flex items-center gap-2 mb-4">
+            <div
+              class="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0"
+            >
+              <svg
+                class="w-4 h-4 text-violet-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-sm font-bold text-slate-800 uppercase tracking-widest"
+            >
+              Extracted Financial Data
+            </h3>
+          </div>
+          <div
+            id="financial-data-grid"
+            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+          ></div>
+
+          <!-- Anomalies -->
+          <div
+            id="anomalies-section"
+            class="hidden mt-5 pt-5 border-t border-slate-100"
+          >
+            <h4
+              class="text-xs font-bold text-slate-600 uppercase tracking-widest mb-3"
+            >
+              Anomalies Detected
+            </h4>
+            <div id="anomalies-container" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- Pipeline Logs (collapsible) -->
+        <div
+          class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-8"
+        >
+          <button
+            onclick="toggleSection('pipeline-logs-body', 'pipeline-chevron')"
+            class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50 transition"
+          >
+            <div class="flex items-center gap-2">
+              <svg
+                class="w-4 h-4 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                />
+              </svg>
+              <span class="text-sm font-semibold text-slate-700"
+                >Pipeline Transparency Logs</span
+              >
+              <span class="text-xs text-slate-400 font-normal"
+                >(click to expand)</span
+              >
+            </div>
+            <svg
+              id="pipeline-chevron"
+              class="w-4 h-4 text-slate-400 transition-transform duration-200"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          <div
+            id="pipeline-logs-body"
+            class="hidden px-6 pb-5 border-t border-slate-50"
+          >
+            <div id="pipeline-logs-content" class="space-y-3 pt-4"></div>
+          </div>
+        </div>
+
+        <!-- Bottom CTA -->
+        <div class="flex justify-end">
+          <button
+            onclick="goToStep(3)"
+            class="inline-flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition shadow-sm"
+          >
+            Continue to Loan Details
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+         SECTION 3 — Loan Details
+    ══════════════════════════════════════════════════════════ -->
+      <section id="section-3" class="step-section">
+        <div class="max-w-lg mx-auto">
+          <div class="text-center mb-8">
+            <h2 class="text-2xl font-extrabold text-slate-900">
+              Loan Assessment Details
+            </h2>
+            <p class="text-slate-500 text-sm mt-2">
+              Enter loan and collateral information for the Five Cs credit
+              scoring
+            </p>
+          </div>
+
+          <div
+            class="bg-white rounded-2xl shadow-sm border border-slate-100 p-7 space-y-5"
+          >
+            <!-- Loan Amount -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                Loan Requested (₹) <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <span
+                  class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-semibold select-none"
+                  >₹</span
+                >
+                <input
+                  id="loan-amount"
+                  type="number"
+                  min="1"
+                  placeholder="5000000"
+                  class="w-full rounded-xl border border-slate-300 pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                />
+              </div>
+              <p class="text-xs text-slate-400 mt-1">
+                Enter the full amount in INR (e.g. 5000000 = ₹50 Lakh)
+              </p>
+            </div>
+
+            <!-- Collateral Value -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5"
+                >Collateral Value (₹)</label
+              >
+              <div class="relative">
+                <span
+                  class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-semibold select-none"
+                  >₹</span
+                >
+                <input
+                  id="collateral-value"
+                  type="number"
+                  min="0"
+                  placeholder="0 (leave blank if unsecured)"
+                  class="w-full rounded-xl border border-slate-300 pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                />
+              </div>
+            </div>
+
+            <!-- Collateral Description -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5"
+                >Collateral Description</label
+              >
+              <input
+                id="collateral-desc"
+                type="text"
+                placeholder="e.g. Residential property at Andheri, Mumbai"
+                class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-slate-400"
+              />
+            </div>
+
+            <!-- Submit -->
+            <button
+              onclick="handleLoanSubmit()"
+              class="w-full flex items-center justify-center gap-2.5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition text-sm shadow-sm"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
+              </svg>
+              Generate Credit Decision
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+         SECTION 4 — Credit Decision
+    ══════════════════════════════════════════════════════════ -->
+      <section id="section-4" class="step-section">
+        <!-- Header -->
+        <div
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7"
+        >
+          <div>
+            <h2 class="text-2xl font-extrabold text-slate-900">
+              Credit Decision
+            </h2>
+            <p id="decision-subtitle" class="text-slate-500 text-sm mt-0.5"></p>
+          </div>
+          <button
+            onclick="resetApp()"
+            class="inline-flex items-center gap-2 px-4 py-2.5 border border-slate-300 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition flex-shrink-0"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            New Analysis
+          </button>
+        </div>
+
+        <!-- Score Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-5 mb-6">
+          <!-- Circle Score -->
+          <div
+            class="md:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center"
+          >
+            <div class="relative w-32 h-32 mb-3">
+              <svg class="w-32 h-32 -rotate-90" viewBox="0 0 112 112">
+                <circle
+                  cx="56"
+                  cy="56"
+                  r="46"
+                  fill="none"
+                  stroke="#e2e8f0"
+                  stroke-width="9"
+                />
+                <circle
+                  id="score-arc"
+                  cx="56"
+                  cy="56"
+                  r="46"
+                  fill="none"
+                  stroke="#2563eb"
+                  stroke-width="9"
+                  stroke-linecap="round"
+                  stroke-dasharray="289.0"
+                  stroke-dashoffset="289.0"
+                />
+              </svg>
+              <div
+                class="absolute inset-0 flex flex-col items-center justify-center"
+              >
+                <span
+                  id="total-score-val"
+                  class="text-4xl font-extrabold text-slate-900 leading-none"
+                  >–</span
+                >
+                <span class="text-xs text-slate-400 font-medium mt-0.5"
+                  >/100</span
+                >
+              </div>
+            </div>
+            <p class="text-sm font-bold text-slate-700">Credit Score</p>
+            <p
+              id="score-label-text"
+              class="text-xs text-slate-400 mt-0.5 text-center"
+            >
+              Five Cs Assessment
+            </p>
+          </div>
+
+          <!-- Five Cs Bars -->
+          <div
+            class="md:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-100 p-6"
+          >
+            <h3
+              class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-5"
+            >
+              Five Cs Breakdown
+            </h3>
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <span class="text-sm font-semibold text-slate-700"
+                    >Character</span
+                  >
+                  <span class="text-sm font-bold text-slate-900"
+                    ><span id="val-character">–</span
+                    ><span class="text-slate-400 font-normal">/25</span></span
+                  >
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    id="bar-character"
+                    class="score-bar h-2 rounded-full bg-slate-300"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <span class="text-sm font-semibold text-slate-700"
+                    >Capacity</span
+                  >
+                  <span class="text-sm font-bold text-slate-900"
+                    ><span id="val-capacity">–</span
+                    ><span class="text-slate-400 font-normal">/25</span></span
+                  >
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    id="bar-capacity"
+                    class="score-bar h-2 rounded-full bg-slate-300"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <span class="text-sm font-semibold text-slate-700"
+                    >Capital</span
+                  >
+                  <span class="text-sm font-bold text-slate-900"
+                    ><span id="val-capital">–</span
+                    ><span class="text-slate-400 font-normal">/20</span></span
+                  >
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    id="bar-capital"
+                    class="score-bar h-2 rounded-full bg-slate-300"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <span class="text-sm font-semibold text-slate-700"
+                    >Collateral</span
+                  >
+                  <span class="text-sm font-bold text-slate-900"
+                    ><span id="val-collateral">–</span
+                    ><span class="text-slate-400 font-normal">/15</span></span
+                  >
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    id="bar-collateral"
+                    class="score-bar h-2 rounded-full bg-slate-300"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <span class="text-sm font-semibold text-slate-700"
+                    >Conditions</span
+                  >
+                  <span class="text-sm font-bold text-slate-900"
+                    ><span id="val-conditions">–</span
+                    ><span class="text-slate-400 font-normal">/15</span></span
+                  >
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    id="bar-conditions"
+                    class="score-bar h-2 rounded-full bg-slate-300"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Decision Card -->
+        <div
+          id="decision-card"
+          class="rounded-2xl p-6 mb-5 border-2 border-slate-200 bg-slate-50"
+        ></div>
+
+        <!-- Score Explanations (collapsible) -->
+        <div
+          class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-5"
+        >
+          <button
+            onclick="toggleSection('expl-body', 'expl-chevron')"
+            class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50 transition"
+          >
+            <div class="flex items-center gap-2">
+              <svg
+                class="w-4 h-4 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                />
+              </svg>
+              <span class="text-sm font-semibold text-slate-700"
+                >Score Explanations (Full AI Reasoning)</span
+              >
+            </div>
+            <svg
+              id="expl-chevron"
+              class="w-4 h-4 text-slate-400 transition-transform duration-200"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          <div id="expl-body" class="hidden border-t border-slate-50">
+            <div
+              id="expl-content"
+              class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6"
+            ></div>
+          </div>
+        </div>
+
+        <!-- CAM Download -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <div class="flex items-center gap-2 mb-2">
+            <div
+              class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0"
+            >
+              <svg
+                class="w-4 h-4 text-indigo-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <h3 class="text-sm font-bold text-slate-800">
+              Credit Assessment Memorandum (CAM)
+            </h3>
+          </div>
+          <p class="text-xs text-slate-500 mb-5 ml-9">
+            AI-generated comprehensive credit report in Word and PDF format
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <a
+              id="cam-docx-link"
+              href="#"
+              target="_blank"
+              class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition shadow-sm"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Download Word (.docx)
+            </a>
+            <a
+              id="cam-pdf-link"
+              href="#"
+              target="_blank"
+              class="inline-flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl transition shadow-sm"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Download PDF
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ─── JavaScript ──────────────────────────────────────────────────── -->
+    <script>
+      // ══════════════════════════════════════════════════════════════════════
+      //  APPLICATION STATE
+      // ══════════════════════════════════════════════════════════════════════
+      const state = {
+        mode: "documents",
+        companyName: "",
+        sector: "",
+        location: "",
+        promoters: [],
+        researchData: null,
+        recommendationData: null,
+      };
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  NAVIGATION
+      // ══════════════════════════════════════════════════════════════════════
+      const ALL_SECTIONS = [
+        "section-1",
+        "section-loading",
+        "section-2",
+        "section-3",
+        "section-4",
+      ];
+
+      function showSection(id) {
+        ALL_SECTIONS.forEach((s) => {
+          const el = document.getElementById(s);
+          if (el) el.classList.remove("active");
+        });
+        const target = document.getElementById(id);
+        if (target) target.classList.add("active");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function goToStep(n) {
+        const map = {
+          1: "section-1",
+          2: "section-2",
+          3: "section-3",
+          4: "section-4",
+        };
+        showSection(map[n]);
+        updateStepIndicator(n);
+      }
+
+      function updateStepIndicator(active) {
+        const labels = { 1: "Setup", 2: "Research", 3: "Loan", 4: "Decision" };
+        for (let n = 1; n <= 4; n++) {
+          const dot = document.getElementById(`dot-${n}`);
+          const label = document.getElementById(`label-${n}`);
+          const connector = document.getElementById(`connector-${n}`);
+          if (!dot) continue;
+
+          if (n < active) {
+            dot.className =
+              "w-7 h-7 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center font-bold transition-all";
+            dot.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>`;
+            if (label) {
+              label.className =
+                "text-xs font-semibold text-emerald-600 transition-colors";
+              label.textContent = labels[n];
+            }
+            if (connector)
+              connector.className =
+                "w-10 h-px bg-emerald-300 transition-colors";
+          } else if (n === active) {
+            dot.className =
+              "w-7 h-7 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-bold transition-all";
+            dot.textContent = n;
+            if (label) {
+              label.className =
+                "text-xs font-bold text-blue-600 transition-colors";
+              label.textContent = labels[n];
+            }
+            if (connector)
+              connector.className = "w-10 h-px bg-slate-200 transition-colors";
+          } else {
+            dot.className =
+              "w-7 h-7 rounded-full bg-slate-200 text-slate-400 text-xs flex items-center justify-center font-bold transition-all";
+            dot.textContent = n;
+            if (label) {
+              label.className =
+                "text-xs font-medium text-slate-400 transition-colors";
+              label.textContent = labels[n];
+            }
+            if (connector)
+              connector.className = "w-10 h-px bg-slate-200 transition-colors";
+          }
+        }
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  MODE TOGGLE
+      // ══════════════════════════════════════════════════════════════════════
+      function setMode(mode) {
+        state.mode = mode;
+        const btnDocs = document.getElementById("mode-btn-docs");
+        const btnRes = document.getElementById("mode-btn-research");
+        const docSec = document.getElementById("doc-upload-section");
+        const btnText = document.getElementById("step1-btn-text");
+
+        const activeClass =
+          "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all bg-white text-blue-600 shadow-sm border border-slate-200";
+        const inactiveClass =
+          "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all text-slate-500";
+
+        if (mode === "documents") {
+          btnDocs.className = activeClass;
+          btnRes.className = inactiveClass;
+          docSec.classList.remove("hidden");
+          btnText.textContent = "Upload & Analyze";
+        } else {
+          btnRes.className = activeClass;
+          btnDocs.className = inactiveClass;
+          docSec.classList.add("hidden");
+          btnText.textContent = "Run Research";
+        }
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  PROMOTERS
+      // ══════════════════════════════════════════════════════════════════════
+      function addPromoter() {
+        const input = document.getElementById("promoter-input");
+        const name = input.value.trim();
+        if (!name) return;
+        if (state.promoters.includes(name)) {
+          input.value = "";
+          return;
+        }
+        state.promoters.push(name);
+        renderPromoters();
+        input.value = "";
+        input.focus();
+      }
+
+      function removePromoter(name) {
+        state.promoters = state.promoters.filter((p) => p !== name);
+        renderPromoters();
+      }
+
+      function renderPromoters() {
+        const list = document.getElementById("promoters-list");
+        list.innerHTML = state.promoters
+          .map(
+            (p) => `
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-200">
+        ${escHtml(p)}
+        <button onclick="removePromoter('${escHtml(p).replace(/'/g, "\\'")}')"
+          class="flex-shrink-0 w-3.5 h-3.5 text-blue-400 hover:text-blue-700 transition rounded-full flex items-center justify-center text-xs leading-none">&times;</button>
+      </span>
+    `,
+          )
+          .join("");
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  FILE UPLOAD
+      // ══════════════════════════════════════════════════════════════════════
+      function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) setFileLabel(file.name);
+      }
+
+      function handleFileDrop(event) {
+        event.preventDefault();
+        document.getElementById("file-drop-zone").classList.remove("drag-over");
+        const file = event.dataTransfer.files[0];
+        if (!file) return;
+        const ext = file.name.split(".").pop().toLowerCase();
+        if (!["pdf", "csv"].includes(ext)) {
+          showToast(
+            "error",
+            "Unsupported file",
+            "Only PDF and CSV files are accepted.",
+          );
+          return;
+        }
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        document.getElementById("file-input").files = dt.files;
+        setFileLabel(file.name);
+      }
+
+      function setFileLabel(name) {
+        document.getElementById("file-label").innerHTML =
+          `<span class="text-blue-600 font-semibold">📄 ${escHtml(name)}</span>`;
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  LOADING ANIMATION
+      // ══════════════════════════════════════════════════════════════════════
+      const STAGES = {
+        documents: [
+          { text: "Uploading document to server…", pct: 8 },
+          { text: "Parsing financial data with AI…", pct: 18 },
+          { text: "Extracting key financial metrics…", pct: 30 },
+          { text: "Detecting anomalies & red flags…", pct: 40 },
+          { text: "Generating web search queries…", pct: 52 },
+          { text: "Searching company intelligence…", pct: 63 },
+          { text: "Fetching & analyzing news articles…", pct: 74 },
+          { text: "Running LLM risk signal extraction…", pct: 84 },
+          { text: "Compiling research report…", pct: 93 },
+          { text: "Almost there…", pct: 97 },
+        ],
+        "research-only": [
+          { text: "Generating search queries…", pct: 10 },
+          { text: "Searching company intelligence…", pct: 25 },
+          { text: "Fetching news articles…", pct: 42 },
+          { text: "Extracting article content…", pct: 57 },
+          { text: "Running LLM analysis…", pct: 72 },
+          { text: "Extracting risk signals…", pct: 85 },
+          { text: "Compiling research report…", pct: 95 },
+        ],
+        recommendation: [
+          { text: "Calculating Five Cs credit score…", pct: 25 },
+          { text: "Deriving credit decision…", pct: 55 },
+          { text: "Generating CAM document with AI…", pct: 80 },
+          { text: "Finalizing report…", pct: 95 },
+        ],
+      };
+
+      let loadingTimer = null;
+      let loadingStageIdx = 0;
+
+      function startLoadingAnimation(type) {
+        clearLoadingAnimation();
+        const stages = STAGES[type] || STAGES.documents;
+        loadingStageIdx = 0;
+
+        const stageEl = document.getElementById("loading-stage");
+        const bar = document.getElementById("loading-progress-bar");
+        const list = document.getElementById("stage-list");
+
+        list.innerHTML = stages
+          .map(
+            (s, i) => `
+      <div id="sl-${i}" class="flex items-center gap-2 text-sm text-slate-400 transition-all">
+        <span id="si-${i}" class="w-4 h-4 flex-shrink-0 flex items-center justify-center text-xs">○</span>
+        <span>${escHtml(s.text)}</span>
+      </div>
+    `,
+          )
+          .join("");
+
+        function tick() {
+          if (loadingStageIdx > 0) {
+            const prevRow = document.getElementById(
+              `sl-${loadingStageIdx - 1}`,
+            );
+            const prevIcon = document.getElementById(
+              `si-${loadingStageIdx - 1}`,
+            );
+            if (prevRow)
+              prevRow.className =
+                "flex items-center gap-2 text-sm text-emerald-500";
+            if (prevIcon) prevIcon.textContent = "✓";
+          }
+          if (loadingStageIdx < stages.length) {
+            const { text, pct } = stages[loadingStageIdx];
+            stageEl.textContent = text;
+            bar.style.width = pct + "%";
+            const curRow = document.getElementById(`sl-${loadingStageIdx}`);
+            const curIcon = document.getElementById(`si-${loadingStageIdx}`);
+            if (curRow)
+              curRow.className =
+                "flex items-center gap-2 text-sm text-blue-600 font-medium transition-all";
+            if (curIcon)
+              curIcon.innerHTML = `<svg class="spinner w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>`;
+            loadingStageIdx++;
+          }
+        }
+
+        tick();
+        loadingTimer = setInterval(tick, 5000);
+      }
+
+      function clearLoadingAnimation() {
+        if (loadingTimer) {
+          clearInterval(loadingTimer);
+          loadingTimer = null;
+        }
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  STEP 1 — SUBMIT
+      // ══════════════════════════════════════════════════════════════════════
+      async function handleStep1Submit() {
+        const companyName = document
+          .getElementById("company-name")
+          .value.trim();
+        const sector = document.getElementById("sector").value;
+
+        if (!companyName) {
+          showToast("error", "Missing field", "Please enter the company name.");
+          return;
+        }
+        if (!sector) {
+          showToast("error", "Missing field", "Please select a sector.");
+          return;
+        }
+
+        if (state.mode === "documents") {
+          const fi = document.getElementById("file-input");
+          if (!fi.files.length) {
+            showToast(
+              "error",
+              "No file",
+              "Please upload a financial document.",
+            );
+            return;
+          }
+        }
+
+        state.companyName = companyName;
+        state.sector = sector;
+        state.location =
+          document.getElementById("location").value.trim() || "India";
+
+        showSection("section-loading");
+        startLoadingAnimation(state.mode);
+
+        try {
+          if (state.mode === "documents") {
+            await runIngestion();
+          } else {
+            await runResearch();
+          }
+          clearLoadingAnimation();
+          renderResearchResults();
+          goToStep(2);
+        } catch (err) {
+          clearLoadingAnimation();
+          showToast(
+            "error",
+            "Analysis Failed",
+            err.message || "Unexpected error. Check the console for details.",
+          );
+          goToStep(1);
+        }
+      }
+
+      async function runIngestion() {
+        const file = document.getElementById("file-input").files[0];
+        const docType = document.getElementById("doc-type").value;
+
+        const metadata = JSON.stringify({
+          company_name: state.companyName,
+          metadata: { sector: state.sector, location: state.location },
+          promoters: state.promoters,
+          documents: [{ document_type: docType, file_name: file.name }],
+        });
+
+        const form = new FormData();
+        form.append("file", file);
+        form.append("metadata", metadata);
+
+        const res = await fetch("/ingest/document", {
+          method: "POST",
+          body: form,
+        });
+        const data = await res.json();
+        if (!res.ok)
+          throw new Error(data.detail || `Server error ${res.status}`);
+
+        // /ingest/document internally calls /research/analyze and returns ResearchResponse
+        state.researchData = data;
+        if (data.financial_data?.company_name)
+          state.companyName = data.financial_data.company_name;
+      }
+
+      async function runResearch() {
+        const res = await fetch("/research/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            company_name: state.companyName,
+            sector: state.sector,
+            promoters: state.promoters,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok)
+          throw new Error(data.detail || `Server error ${res.status}`);
+        state.researchData = data;
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  RENDER RESEARCH RESULTS
+      // ══════════════════════════════════════════════════════════════════════
+      function renderResearchResults() {
+        const d = state.researchData;
+
+        document.getElementById("research-subtitle").textContent =
+          `${state.companyName}  ·  ${state.sector}`;
+
+        document.getElementById("research-summary").textContent =
+          d.research_summary || "No summary available.";
+
+        renderRiskSignals(d.risk_signals || []);
+        renderBulletList(
+          "company-news",
+          d.company_news || [],
+          "No news items found.",
+        );
+        renderBulletList(
+          "promoter-risks",
+          d.promoter_risks || [],
+          "No promoter risks identified.",
+        );
+        renderBulletList(
+          "sector-trends",
+          d.sector_trends || [],
+          "No sector trends available.",
+        );
+
+        if (d.financial_data) renderFinancialData(d.financial_data);
+        renderPipelineLogs(d.pipeline_logs || []);
+      }
+
+      function renderRiskSignals(signals) {
+        const container = document.getElementById("risk-signals-container");
+        const badge = document.getElementById("risk-count-badge");
+        badge.textContent = signals.length;
+
+        if (!signals.length) {
+          container.innerHTML = `
+        <div class="flex items-center gap-2 text-sm text-emerald-600 font-medium bg-emerald-50 px-4 py-3 rounded-xl border border-emerald-100">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          No risk signals detected. Clean risk profile.
+        </div>`;
+          return;
+        }
+
+        const SEV = {
+          5: {
+            wrap: "bg-red-50 border-red-200",
+            badge: "bg-red-600 text-white",
+            label: "Critical",
+          },
+          4: {
+            wrap: "bg-orange-50 border-orange-200",
+            badge: "bg-orange-500 text-white",
+            label: "High",
+          },
+          3: {
+            wrap: "bg-amber-50 border-amber-200",
+            badge: "bg-amber-500 text-white",
+            label: "Medium",
+          },
+          2: {
+            wrap: "bg-yellow-50 border-yellow-200",
+            badge: "bg-yellow-400 text-yellow-900",
+            label: "Low-Med",
+          },
+          1: {
+            wrap: "bg-green-50 border-green-200",
+            badge: "bg-green-500 text-white",
+            label: "Low",
+          },
+        };
+
+        container.innerHTML = signals
+          .map((s) => {
+            const c = SEV[String(s.severity)] || SEV["3"];
+            return `
+        <div class="rounded-xl border ${c.wrap} p-4 mb-3">
+          <div class="flex flex-wrap items-center gap-2 mb-2">
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full ${c.badge}">${c.label}</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-700">${escHtml(s.risk_type)}</span>
+            <span class="text-xs text-slate-500">Entity: <strong class="text-slate-700">${escHtml(s.entity)}</strong></span>
+            ${s.source ? `<span class="ml-auto text-xs text-slate-400">${escHtml(s.source)}</span>` : ""}
+          </div>
+          <p class="text-sm text-slate-700 leading-relaxed">${escHtml(s.evidence)}</p>
+        </div>`;
+          })
+          .join("");
+      }
+
+      function renderBulletList(id, items, emptyMsg) {
+        const el = document.getElementById(id);
+        if (!items.length) {
+          el.innerHTML = `<li class="text-xs text-slate-400 italic">${emptyMsg}</li>`;
+          return;
+        }
+        el.innerHTML = items
+          .map(
+            (txt) => `
+      <li class="flex gap-2 text-xs text-slate-600 leading-relaxed">
+        <span class="flex-shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+        <span>${escHtml(txt)}</span>
+      </li>`,
+          )
+          .join("");
+      }
+
+      function renderFinancialData(fd) {
+        const section = document.getElementById("financial-data-section");
+        const grid = document.getElementById("financial-data-grid");
+        section.classList.remove("hidden");
+
+        const fs = fd.financial_summary || {};
+        const fr = fd.financial_ratios || {};
+        const ca = fd.cashflow_analysis || {};
+
+        const metrics = [
+          { label: "Revenue", value: fs.revenue, fmt: "inr" },
+          { label: "Profit", value: fs.profit, fmt: "inr" },
+          { label: "Total Assets", value: fs.total_assets, fmt: "inr" },
+          {
+            label: "Total Liabilities",
+            value: fs.total_liabilities,
+            fmt: "inr",
+          },
+          { label: "Net Worth", value: fs.net_worth, fmt: "inr" },
+          { label: "Debt / Equity", value: fr.debt_to_equity, fmt: "ratio" },
+          { label: "Current Ratio", value: fr.current_ratio, fmt: "ratio" },
+          { label: "Profit Margin", value: fr.profit_margin, fmt: "pct" },
+          { label: "DSCR", value: fr.dscr, fmt: "ratio" },
+          {
+            label: "Avg Monthly Inflow",
+            value: ca.monthly_avg_inflow,
+            fmt: "inr",
+          },
+          {
+            label: "Avg Monthly Outflow",
+            value: ca.monthly_avg_outflow,
+            fmt: "inr",
+          },
+          {
+            label: "Cashflow Volatility",
+            value: ca.cashflow_volatility,
+            fmt: "text",
+          },
+        ].filter((m) => m.value != null && m.value !== undefined);
+
+        grid.innerHTML = metrics
+          .map((m) => {
+            let display = "–";
+            if (m.value != null) {
+              if (m.fmt === "inr") display = "₹" + fmtInr(m.value);
+              else if (m.fmt === "pct")
+                display = (m.value * 100).toFixed(1) + "%";
+              else if (m.fmt === "ratio") display = Number(m.value).toFixed(2);
+              else display = String(m.value);
+            }
+            return `
+        <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+          <p class="text-xs text-slate-500 mb-0.5 truncate">${escHtml(m.label)}</p>
+          <p class="text-sm font-bold text-slate-900">${escHtml(display)}</p>
+        </div>`;
+          })
+          .join("");
+
+        // Anomalies
+        const anomalies = fd.anomalies_detected || [];
+        if (anomalies.length) {
+          const aSection = document.getElementById("anomalies-section");
+          const aContainer = document.getElementById("anomalies-container");
+          aSection.classList.remove("hidden");
+
+          const sevColor = {
+            low: "bg-green-100 text-green-700",
+            medium: "bg-amber-100 text-amber-700",
+            high: "bg-red-100 text-red-700",
+          };
+          aContainer.innerHTML = anomalies
+            .map((a) => {
+              const col = sevColor[a.severity] || sevColor.medium;
+              return `
+          <div class="flex gap-3 items-start bg-white rounded-xl p-3 border border-slate-100">
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full ${col} flex-shrink-0 mt-0.5 capitalize">${escHtml(a.severity)}</span>
+            <div>
+              <p class="text-xs font-semibold text-slate-700">${escHtml(a.type)} <span class="font-normal text-slate-400">· ${escHtml(a.period)}</span></p>
+              <p class="text-xs text-slate-600 mt-0.5">${escHtml(a.description)}</p>
+            </div>
+          </div>`;
+            })
+            .join("");
+        }
+      }
+
+      function renderPipelineLogs(logs) {
+        const el = document.getElementById("pipeline-logs-content");
+        if (!logs.length) {
+          el.innerHTML =
+            '<p class="text-sm text-slate-400 italic">No logs available.</p>';
+          return;
+        }
+        el.innerHTML = logs
+          .map(
+            (log) => `
+      <div class="rounded-xl border border-slate-100 overflow-hidden">
+        <div class="flex items-center gap-2 px-4 py-2 bg-slate-50 border-b border-slate-100">
+          <span class="text-xs font-bold px-2 py-0.5 bg-white border border-slate-200 rounded-full text-slate-600">${escHtml(log.stage)}</span>
+          <span class="text-xs text-slate-400">${escHtml(log.timestamp)}</span>
+        </div>
+        <pre class="text-xs text-slate-600 overflow-auto max-h-48 p-4 whitespace-pre-wrap bg-white">${escHtml(JSON.stringify(log.data, null, 2))}</pre>
+      </div>`,
+          )
+          .join("");
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  STEP 3 — LOAN SUBMIT
+      // ══════════════════════════════════════════════════════════════════════
+      async function handleLoanSubmit() {
+        const loanAmt = parseFloat(
+          document.getElementById("loan-amount").value,
+        );
+        if (!loanAmt || loanAmt <= 0) {
+          showToast(
+            "error",
+            "Invalid amount",
+            "Please enter a valid loan amount in INR.",
+          );
+          return;
+        }
+
+        const collateralValue =
+          parseFloat(document.getElementById("collateral-value").value) || null;
+        const collateralDesc =
+          document.getElementById("collateral-desc").value.trim() ||
+          "Unsecured";
+        const rd = state.researchData || {};
+
+        const payload = {
+          company_name: state.companyName,
+          sector: state.sector,
+          loan_requested: loanAmt,
+          collateral_value: collateralValue,
+          collateral_description: collateralDesc,
+          promoters: state.promoters,
+          research_summary: rd.research_summary || "",
+          company_news: rd.company_news || [],
+          promoter_risks: rd.promoter_risks || [],
+          sector_trends: rd.sector_trends || [],
+          risk_signals: rd.risk_signals || [],
+          financial_data: rd.financial_data || null,
+        };
+
+        showSection("section-loading");
+        startLoadingAnimation("recommendation");
+
+        try {
+          const res = await fetch("/recommend/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok)
+            throw new Error(data.detail || `Server error ${res.status}`);
+
+          clearLoadingAnimation();
+          state.recommendationData = data;
+          renderDecision(data);
+          goToStep(4);
+        } catch (err) {
+          clearLoadingAnimation();
+          showToast(
+            "error",
+            "Recommendation Failed",
+            err.message || "Could not generate recommendation.",
+          );
+          goToStep(3);
+        }
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  RENDER DECISION
+      // ══════════════════════════════════════════════════════════════════════
+      function renderDecision(data) {
+        document.getElementById("decision-subtitle").textContent =
+          data.company_name || state.companyName;
+
+        const score = data.score_breakdown;
+        const total = score.total;
+
+        // Arc animation
+        const circumference = 2 * Math.PI * 46; // r = 46 → ≈ 289.0
+        const arcColor =
+          total >= 75 ? "#16a34a" : total >= 50 ? "#d97706" : "#dc2626";
+        const arc = document.getElementById("score-arc");
+        arc.setAttribute("stroke", arcColor);
+        document.getElementById("total-score-val").textContent = total;
+        document.getElementById("total-score-val").style.color = arcColor;
+
+        setTimeout(() => {
+          arc.style.strokeDashoffset = circumference * (1 - total / 100);
+        }, 120);
+
+        document.getElementById("score-label-text").textContent =
+          total >= 75
+            ? "Strong Credit Profile"
+            : total >= 60
+              ? "Good Credit Profile"
+              : total >= 50
+                ? "Fair Credit Profile"
+                : total >= 40
+                  ? "Weak Credit Profile"
+                  : "Poor Credit Profile";
+
+        // Five Cs bars
+        const cs = [
+          { key: "character", val: score.character, max: 25 },
+          { key: "capacity", val: score.capacity, max: 25 },
+          { key: "capital", val: score.capital, max: 20 },
+          { key: "collateral", val: score.collateral, max: 15 },
+          { key: "conditions", val: score.conditions, max: 15 },
+        ];
+        setTimeout(() => {
+          cs.forEach((c) => {
+            const pct = (c.val / c.max) * 100;
+            document.getElementById(`val-${c.key}`).textContent = c.val;
+            const bar = document.getElementById(`bar-${c.key}`);
+            bar.style.width = pct + "%";
+            bar.className = `score-bar h-2 rounded-full ${pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-red-500"}`;
+          });
+        }, 150);
+
+        // Decision card
+        renderDecisionCard(data.decision);
+
+        // Explanations
+        renderScoreExplanations(data.score_explanation);
+
+        // CAM links
+        document.getElementById("cam-docx-link").href = data.cam_report_url;
+        const pdfLink = document.getElementById("cam-pdf-link");
+        if (data.cam_pdf_url) {
+          pdfLink.href = data.cam_pdf_url;
+          pdfLink.style.display = "";
+        } else {
+          pdfLink.style.display = "none";
+        }
+      }
+
+      function renderDecisionCard(decision) {
+        const card = document.getElementById("decision-card");
+
+        const CFG = {
+          approved: {
+            wrap: "bg-emerald-50 border-emerald-400",
+            icon: "bg-emerald-500 text-white",
+            title: "text-emerald-800",
+            label: "APPROVED",
+            sym: "✓",
+            lineColor: "border-emerald-200",
+          },
+          conditional: {
+            wrap: "bg-amber-50 border-amber-400",
+            icon: "bg-amber-500 text-white",
+            title: "text-amber-800",
+            label: "CONDITIONAL APPROVAL",
+            sym: "!",
+            lineColor: "border-amber-200",
+          },
+          rejected: {
+            wrap: "bg-red-50 border-red-400",
+            icon: "bg-red-500 text-white",
+            title: "text-red-800",
+            label: "REJECTED",
+            sym: "✕",
+            lineColor: "border-red-200",
+          },
+        };
+
+        const c = CFG[decision.status] || CFG.rejected;
+        card.className = `rounded-2xl p-6 mb-5 border-2 ${c.wrap}`;
+
+        let detailsHtml = "";
+        if (decision.loan_amount_recommended) {
+          detailsHtml = `
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5 pt-5 border-t ${c.lineColor}">
+          <div class="text-center">
+            <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Recommended Amount</p>
+            <p class="text-xl font-extrabold text-slate-900">₹${fmtInr(decision.loan_amount_recommended)}</p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Interest Rate</p>
+            <p class="text-xl font-extrabold text-slate-900">${decision.interest_rate}% p.a.</p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Tenor</p>
+            <p class="text-xl font-extrabold text-slate-900">${decision.tenor_months} months</p>
+          </div>
+        </div>`;
+        }
+
+        card.innerHTML = `
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-full ${c.icon} flex items-center justify-center font-bold text-lg flex-shrink-0">${c.sym}</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-base font-extrabold ${c.title} mb-2">${c.label}</p>
+          <p class="text-sm text-slate-700 leading-relaxed"><strong class="font-semibold">Primary Reason:</strong> ${escHtml(decision.primary_reason)}</p>
+          ${
+            decision.detailed_reasoning &&
+            decision.detailed_reasoning !== decision.primary_reason
+              ? `<p class="text-sm text-slate-600 mt-2 leading-relaxed">${escHtml(decision.detailed_reasoning)}</p>`
+              : ""
+          }
+        </div>
+      </div>
+      ${detailsHtml}`;
+      }
+
+      function renderScoreExplanations(expl) {
+        const content = document.getElementById("expl-content");
+        const cats = [
+          { key: "character_reasons", label: "Character", color: "blue" },
+          { key: "capacity_reasons", label: "Capacity", color: "indigo" },
+          { key: "capital_reasons", label: "Capital", color: "violet" },
+          { key: "collateral_reasons", label: "Collateral", color: "purple" },
+          { key: "conditions_reasons", label: "Conditions", color: "fuchsia" },
+        ];
+
+        content.innerHTML = cats
+          .map((cat) => {
+            const reasons = expl[cat.key] || [];
+            return `
+        <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-3">${cat.label}</h4>
+          <ul class="space-y-1.5">
+            ${reasons
+              .map(
+                (r) => `
+              <li class="flex gap-2 text-xs text-slate-600 leading-relaxed">
+                <span class="flex-shrink-0 text-slate-400 mt-0.5">→</span>
+                <span>${escHtml(r)}</span>
+              </li>`,
+              )
+              .join("")}
+          </ul>
+        </div>`;
+          })
+          .join("");
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  HELPERS
+      // ══════════════════════════════════════════════════════════════════════
+      function toggleSection(bodyId, chevronId) {
+        const body = document.getElementById(bodyId);
+        const chevron = document.getElementById(chevronId);
+        if (!body) return;
+        const isHidden = body.classList.toggle("hidden");
+        if (chevron) chevron.style.transform = isHidden ? "" : "rotate(180deg)";
+      }
+
+      function escHtml(str) {
+        if (str == null) return "";
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function fmtInr(value) {
+        if (value == null) return "–";
+        const n = Number(value);
+        if (n >= 1e7) return (n / 1e7).toFixed(2) + " Cr";
+        if (n >= 1e5) return (n / 1e5).toFixed(2) + " L";
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+        return n.toLocaleString("en-IN");
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  RESET
+      // ══════════════════════════════════════════════════════════════════════
+      function resetApp() {
+        state.mode = "documents";
+        state.companyName = "";
+        state.sector = "";
+        state.location = "";
+        state.promoters = [];
+        state.researchData = null;
+        state.recommendationData = null;
+
+        document.getElementById("company-name").value = "";
+        document.getElementById("sector").value = "";
+        document.getElementById("location").value = "";
+        document.getElementById("loan-amount").value = "";
+        document.getElementById("collateral-value").value = "";
+        document.getElementById("collateral-desc").value = "";
+        document.getElementById("file-input").value = "";
+        document.getElementById("file-label").innerHTML =
+          'Drop file here or <span class="text-blue-600 font-semibold">click to browse</span>';
+
+        renderPromoters();
+        setMode("documents");
+        goToStep(1);
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  TOAST
+      // ══════════════════════════════════════════════════════════════════════
+      let toastTimer;
+
+      function showToast(type, title, msg) {
+        clearTimeout(toastTimer);
+        const CFGS = {
+          error: {
+            inner: "bg-red-50 border-red-200",
+            text: "text-red-800",
+            icon: "✕",
+          },
+          success: {
+            inner: "bg-emerald-50 border-emerald-200",
+            text: "text-emerald-800",
+            icon: "✓",
+          },
+          info: {
+            inner: "bg-blue-50 border-blue-200",
+            text: "text-blue-800",
+            icon: "ℹ",
+          },
+        };
+        const c = CFGS[type] || CFGS.info;
+
+        document.getElementById("toast-inner").className =
+          `rounded-xl shadow-lg p-4 flex items-start gap-3 border ${c.inner} ${c.text}`;
+        document.getElementById("toast-icon").textContent = c.icon;
+        document.getElementById("toast-title").textContent = title;
+        document.getElementById("toast-msg").textContent = msg;
+        document.getElementById("toast").classList.remove("hidden");
+        toastTimer = setTimeout(hideToast, 7000);
+      }
+
+      function hideToast() {
+        document.getElementById("toast").classList.add("hidden");
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      //  INIT
+      // ══════════════════════════════════════════════════════════════════════
+      document.addEventListener("DOMContentLoaded", () => {
+        updateStepIndicator(1);
+      });
+    </script>
+  </body>
+</html>
