@@ -6,3 +6,5 @@ __pycache__/
 *.pyc
 
 storage/documents/doc_*
+storage/cam/*docx
+storage/cam/*doc

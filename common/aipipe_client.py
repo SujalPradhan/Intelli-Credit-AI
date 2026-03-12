@@ -1,12 +1,10 @@
-from openai import OpenAI
+from openai import AsyncOpenAI
 from common.config import settings
 
 
-def get_aipipe_client() -> OpenAI:
-    """Initialize and return an OpenAI client configured for AIPipe."""
-    # Since AIPipe is an OpenAI-compatible endpoint, we use the standard OpenAI client
-    # and override the base_url.
-    client = OpenAI(
+def get_aipipe_client() -> AsyncOpenAI:
+    """Initialize and return an async OpenAI client configured for AIPipe."""
+    client = AsyncOpenAI(
         api_key=settings.AIPIPE_API_KEY or "sk-placeholder", 
         base_url="https://aipipe.org/openai/v1"
     )

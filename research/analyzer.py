@@ -1,5 +1,5 @@
 import json
-from openai import OpenAI
+from openai import AsyncOpenAI
 from research.schemas import ExtractedArticle, RiskSignal
 from research.prompts import get_analysis_prompt, get_risk_extraction_prompt
 
@@ -7,17 +7,17 @@ from research.prompts import get_analysis_prompt, get_risk_extraction_prompt
 MODEL = "gpt-5-nano"
 
 
-def analyze_article(
+async def analyze_article(
     article: ExtractedArticle,
     company_name: str,
     sector: str,
-    aipipe_client: OpenAI,
+    aipipe_client: AsyncOpenAI,
 ) -> dict:
     """Send article text to AIPipe for risk analysis. Returns prompt and response."""
     prompt = get_analysis_prompt(article.text, company_name, sector)
 
     try:
-        response = aipipe_client.chat.completions.create(
+        response = await aipipe_client.chat.completions.create(
             model=MODEL,
             messages=[
                 {"role": "user", "content": prompt}
@@ -34,20 +34,20 @@ def analyze_article(
     }
 
 
-def extract_risk_signals(
+async def extract_risk_signals(
     analysis_texts: list[str],
     company_name: str,
-    aipipe_client: OpenAI,
+    aipipe_client: AsyncOpenAI,
 ) -> list[RiskSignal]:
     """Convert combined LLM analyses into structured risk signals via AIPipe."""
     combined = "\n\n---\n\n".join(analysis_texts)
     prompt = get_risk_extraction_prompt(combined, company_name)
 
     try:
-        response = aipipe_client.chat.completions.create(
+        response = await aipipe_client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"} # Force JSON if the model supports it, else prompt-level parsing applies
+            response_format={"type": "json_object"}
         )
         raw = response.choices[0].message.content.strip()
 

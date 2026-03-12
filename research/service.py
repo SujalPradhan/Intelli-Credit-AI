@@ -29,7 +29,7 @@ async def perform_research(request: ResearchRequest) -> ResearchResponse:
     # ── Stage 2: Search Retrieval ──────────────────────────────────────
     all_search_results = []
     for query in queries:
-        results = search_serper(query)
+        results = await search_serper(query)
         all_search_results.extend(results)
 
     # Deduplicate by link
@@ -55,7 +55,7 @@ async def perform_research(request: ResearchRequest) -> ResearchResponse:
         if len(articles) >= target_article_count:
             break
             
-        article = extract_article(result.link)
+        article = await extract_article(result.link)
         if article:
             articles.append(article)
             extraction_log.append({
@@ -79,7 +79,7 @@ async def perform_research(request: ResearchRequest) -> ResearchResponse:
     analysis_results = []
     analysis_texts = []
     for article in articles:
-        result = analyze_article(article, request.company_name, request.sector, client)
+        result = await analyze_article(article, request.company_name, request.sector, client)
         analysis_results.append(result)
         analysis_texts.append(result["response"])
 
@@ -91,7 +91,7 @@ async def perform_research(request: ResearchRequest) -> ResearchResponse:
     # ── Stage 5: Risk Signal Extraction ────────────────────────────────
     risk_signals: list[RiskSignal] = []
     if analysis_texts:
-        risk_signals = extract_risk_signals(analysis_texts, request.company_name, client)
+        risk_signals = await extract_risk_signals(analysis_texts, request.company_name, client)
 
     logger.log("risk_signal_extraction", {
         "signals_found": len(risk_signals),
@@ -109,7 +109,7 @@ async def perform_research(request: ResearchRequest) -> ResearchResponse:
         summary_prompt = get_summary_prompt(combined, request.company_name, request.sector)
 
         try:
-            summary_response = client.chat.completions.create(
+            summary_response = await client.chat.completions.create(
                 model=MODEL,
                 messages=[{"role": "user", "content": summary_prompt}],
                 response_format={"type": "json_object"}
