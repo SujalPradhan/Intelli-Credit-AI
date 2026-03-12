@@ -110,12 +110,14 @@ AIPIPE_API_KEY=your_aipipe_api_key
 ### Running
 
 ```bash
-uv run main.py
+uv run frontend_server.py
 # or
-python main.py
+python frontend_server.py
 ```
 
-Server starts at `http://localhost:8000`. Open `http://localhost:8000/docs` for the Swagger UI.
+Server starts at `http://localhost:8000/`.
+Go to `http://localhost:8000/ui` for dedicated UI
+Open `http://localhost:8000/docs` for the Swagger UI.
 
 ## API Endpoints
 
