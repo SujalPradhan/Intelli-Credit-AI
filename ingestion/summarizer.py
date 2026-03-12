@@ -8,6 +8,7 @@ from ingestion.prompts import SYSTEM_PROMPT
 load_dotenv()
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+aio_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def build_user_prompt(company_name: str, sector: str, location: str, parsed_docs: list[dict]) -> str:
     docs_text = ""
@@ -29,7 +30,7 @@ DOCUMENT CONTENTS:
 Extract all financial data and return the JSON.
 """
 
-def summarize(
+async def summarize(
         company_name: str,
         sector: str,
         location: str,
@@ -38,7 +39,7 @@ def summarize(
     
     prompt = build_user_prompt(company_name, sector, location, parsed_docs)
 
-    response = client.models.generate_content(
+    response = await aio_client.aio.models.generate_content(
         model="gemini-2.5-flash",
         contents=SYSTEM_PROMPT + "\n\n" + prompt,
         config = {

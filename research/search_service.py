@@ -1,4 +1,4 @@
-import requests
+import httpx
 from common.config import settings
 from research.schemas import SearchResult
 
@@ -30,7 +30,7 @@ def generate_queries(
     return queries
 
 
-def search_serper(query: str, num_results: int = 5) -> list[SearchResult]:
+async def search_serper(query: str, num_results: int = 5) -> list[SearchResult]:
     """Call Serper API to retrieve search results for a single query."""
     url = "https://google.serper.dev/search"
     headers = {
@@ -40,10 +40,11 @@ def search_serper(query: str, num_results: int = 5) -> list[SearchResult]:
     payload = {"q": query, "num": num_results}
 
     try:
-        response = requests.post(url, json=payload, headers=headers, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-    except requests.RequestException as e:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+            data = response.json()
+    except httpx.HTTPError as e:
         print(f"[search_service] Serper API error for query '{query}': {e}")
         return []
 

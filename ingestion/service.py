@@ -49,7 +49,7 @@ async def process_company_documents(
         print(f"Tables found: {doc['tables_found']}")
 
     # Summarize all docs together with Gemini
-    result = summarize(company_name, sector, location, parsed_docs)
+    result = await summarize(company_name, sector, location, parsed_docs)
 
     # calling the research agent
     research_payload = {
@@ -59,7 +59,8 @@ async def process_company_documents(
         "financial_data": result.dict()
     }
 
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=300.0) as client:
         research_response = await client.post(RESEARCH_URL, json=research_payload)
+        research_response.raise_for_status()
 
     return research_response.json()
