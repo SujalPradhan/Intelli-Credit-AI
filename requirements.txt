@@ -27,7 +27,8 @@ six==1.17.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
 urllib3==2.6.3
-uvicorn[standard]annotated-doc==0.0.4
+uvicorn[standard]
+annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.12.1
 babel==2.18.0
